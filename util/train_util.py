@@ -29,3 +29,20 @@ class AverageMeter:
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
+
+
+def train_epoch(model, train_loader, optimizer, criterion, device):
+    model.train()
+
+    loss_meter = AverageMeter()
+    grad_norm_meter = AverageMeter()
+    param_norm_meter = AverageMeter()
+
+    for idx, pack in enumerate(train_loader):
+
+        _input = torch.cat([pack['image'][0], pack['image'][1]], dim=0)
+        output = model(_input)
+
+
+
