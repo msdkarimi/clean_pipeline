@@ -1,4 +1,7 @@
 import torch
+from util.optimizer import build_optimizer
+from util.lr_scheduler import build_scheduler
+from util.config import get_opt_config, get_lr_scheduler_config
 
 def get_grad_norm(parameters, norm_type=2):
     if isinstance(parameters, torch.Tensor):
@@ -31,6 +34,17 @@ class AverageMeter:
         self.avg = self.sum / self.count
 
 
+def configure_optimizers(model, num_training_steps_per_epoch):
+    optimizer_sup_con = build_optimizer(get_opt_config('sup_con'), [model.backbone, model._sup_con_head])
+    optimizer_cls = build_optimizer(get_opt_config('cls'), model._cls_head)
+
+
+    lr_scheduler_1 = build_scheduler(get_lr_scheduler_config(), optimizer_sup_con, num_training_steps_per_epoch)
+    lr_scheduler_2 = build_scheduler(get_lr_scheduler_config(), optimizer_cls, num_training_steps_per_epoch)
+
+    return (
+        optimizer_sup_con, optimizer_cls , lr_scheduler_1, lr_scheduler_2
+    )
 
 def train_epoch(model, train_loader, optimizer, criterion, device):
     model.train()
@@ -43,6 +57,3 @@ def train_epoch(model, train_loader, optimizer, criterion, device):
 
         _input = torch.cat([pack['image'][0], pack['image'][1]], dim=0)
         output = model(_input)
-
-
-
