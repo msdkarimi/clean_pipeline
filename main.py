@@ -6,7 +6,7 @@ from modules.sup_con_model import SupConModel
 from util.train_util import train_epoch, configure_optimizers, validation, from_pretrained
 import torch
 from util.logger import build_logger
-from util.dataset_loader_wsss import SupConDataset
+from util.dataset_loader import SupConDataset
 from util.data_loade_util import TwoCropTransform
 from torch.utils.data import DataLoader
 import os
