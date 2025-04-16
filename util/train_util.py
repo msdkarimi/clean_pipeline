@@ -5,8 +5,17 @@ from util.config import get_opt_config, get_lr_scheduler_config
 from util.loss import SupConLoss
 import torch.nn as nn
 import numpy as np
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.metrics import precision_recall_fscore_support
-
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score
+from sklearn.metrics import pairwise_distances
+import matplotlib.pyplot as plt
+import matplotlib
+import logging
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
 def get_grad_norm(parameters, norm_type=2):
     if isinstance(parameters, torch.Tensor):
@@ -113,7 +122,7 @@ def train_epoch(model, train_loader, opts_lr_schedulers, epoch, steps_per_epoch,
 
 
 @torch.no_grad()
-def validation(model, val_loader, logger):
+def validation(model, val_loader, epoch, logger):
     model.eval()
 
     _preds = []
@@ -123,8 +132,7 @@ def validation(model, val_loader, logger):
     for batch_idx, a_batch in enumerate(val_loader):
         images = a_batch['image'].cuda()
         labels = a_batch['label']
-        sup_con_logits, cls_logits = model(images, mode='val')
-
+        sup_con_logits, cls_logits = model(images, phase='val')
         cls_preds = cls_logits.argmax(dim=1)
         _preds.extend(cls_preds.detach().cpu().numpy())
         _labels.extend(labels.numpy())
@@ -133,10 +141,73 @@ def validation(model, val_loader, logger):
     _labels = np.array(_labels)
     _preds = np.array(_preds)
 
+    cm = confusion_matrix(_labels, _preds)
+    cm_normalized = cm.astype('float') / cm.sum(axis=1, keepdims=True)
+    class_names = [f'Class_{lbl}' for lbl in np.unique(_labels).tolist()]
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm_normalized, display_labels=class_names)
+    disp.plot(cmap=plt.cm.Blues, values_format=".2f")
+    plt.title("Confusion Matrix")
+    # plt.show()
+    plt.savefig(f'plots/cm/e_{epoch}.png', format="png", dpi=300)
 
+    precision = precision_recall_fscore_support(
+            _labels , _preds, average='weighted', labels= np.unique(_labels)
+        )
 
+    precision, recall, f_score, true_sum = precision
 
+    all_embeddings = _embeds
+    all_labels = _labels
 
+    scaler = StandardScaler()
+    embeddings = scaler.fit_transform(all_embeddings)
+    pca = PCA(n_components=10)
+    pca_result = pca.fit_transform(embeddings)
+    tsne = TSNE(n_components=2, random_state=42)
+    embeddings_2d = tsne.fit_transform(pca_result)
 
+    sil_score = silhouette_score(embeddings, all_labels)
+    distances = pairwise_distances(embeddings)
+
+    # Initialize variables for inter-class and intra-class distances
+    intra_class_distances = []
+    inter_class_distances = []
+
+    # Compute intra-class and inter-class distances
+    for i in range(len(all_labels)):
+        for j in range(i + 1, len(all_labels)):
+            if all_labels[i] == all_labels[j]:
+                intra_class_distances.append(distances[i, j])
+            else:
+                inter_class_distances.append(distances[i, j])
+
+    # Calculate the mean intra-class and inter-class distances
+    mean_intra_class_distance = np.mean(intra_class_distances)
+    mean_inter_class_distance = np.mean(inter_class_distances)
+
+    # Calculate the Inter/Intra Distance Ratio
+    distance_ratio = mean_inter_class_distance / mean_intra_class_distance
+
+    # Plot
+    plt.figure(figsize=(10, 8))
+    plt.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1], c=all_labels.tolist(), cmap='viridis', s=10)
+    plt.colorbar()
+    plt.xlabel(f'dimension 1')
+    plt.ylabel(f'dimension 2')
+    plt.title(f'Silhouette Score: {sil_score:.4f}, Inter/Intra-class Distance Ratio: {distance_ratio:.4f}')
+    plt.savefig(f'plots/embed/e_{epoch}.png', format="png", dpi=300)  # You can change the filename and format if needed
+    # plt.show()
+    plt.close()
+
+    logger.info(
+        f'precision={precision}\t'
+        f'recall={recall}\t'
+        f'f_score={f_score}\t'
+        f'sil_score={sil_score}\t'
+        f'distance_ratio={distance_ratio:.4f}\t'
+        # f'val_loss={(_cls_loss_tot / len(self.val_dataloader)):.4f}\t'
+    )
+
+    return f_score
 
 
