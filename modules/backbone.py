@@ -520,12 +520,12 @@ class FocalNet(nn.Module):
         return x
 
     def forward(self, x, classification=False):
-        x, scales = self.forward_features(x)
+        x = self.forward_features(x)
         if classification:
             x = self.head(x)
             return x, scales
         else:
-            return x, scales
+            return x
 
     def flops(self):
         flops = 0

@@ -4,6 +4,9 @@ from util.lr_scheduler import build_scheduler
 from util.config import get_opt_config, get_lr_scheduler_config
 from util.loss import SupConLoss
 import torch.nn as nn
+import numpy as np
+from sklearn.metrics import precision_recall_fscore_support
+
 
 def get_grad_norm(parameters, norm_type=2):
     if isinstance(parameters, torch.Tensor):
@@ -107,6 +110,31 @@ def train_epoch(model, train_loader, opts_lr_schedulers, epoch, steps_per_epoch,
                              f'grad_norm_cls={grad_norm_meter_cls.avg:.5f}\t'
                              f'grad_norm_supCon={grad_norm_meter_supCon.avg:.5f}\t'
                              f'mem={mem:.2f}GB')
+
+
+@torch.no_grad()
+def validation(model, val_loader, logger):
+    model.eval()
+
+    _preds = []
+    _labels = []
+    _embeds = []
+
+    for batch_idx, a_batch in enumerate(val_loader):
+        images = a_batch['image'].cuda()
+        labels = a_batch['label']
+        sup_con_logits, cls_logits = model(images, mode='val')
+
+        cls_preds = cls_logits.argmax(dim=1)
+        _preds.extend(cls_preds.detach().cpu().numpy())
+        _labels.extend(labels.numpy())
+        _embeds.extend(sup_con_logits.detach().cpu().numpy())
+
+    _labels = np.array(_labels)
+    _preds = np.array(_preds)
+
+
+
 
 
 
