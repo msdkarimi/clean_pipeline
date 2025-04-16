@@ -12,6 +12,8 @@ def get_backbone_config():
     config.focal.focal_levels = [3, 3, 3, 3]
     config.focal.focal_windows = [3, 3, 3, 3]
     config.focal.drop_path_rate = 0.5
+    config.focal.fine_tune_modulation_block_adopter = False # if this is true, it freezes the vision backbone and just the adopter layer is trainable
+
     # config.focal.num_classes = 10
     return config
 
@@ -39,7 +41,7 @@ def get_lr_scheduler_config(method='linear'):
     config = ConfigDict()
     if method == 'linear':
         config.name = 'linear'
-        config.decay_epochs = 2
+        config.decay_epochs = 0
         config.warmup_epochs = 2
         config.warmup_lr = 1e-5
         config.epochs = EPOCHS

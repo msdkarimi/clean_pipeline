@@ -2,10 +2,10 @@ from torchvision import transforms
 
 class TwoCropTransform:
     """Create two crops of the same image"""
-    def __init__(self, mode='train'):
+    def __init__(self, mode='train', h=256, w=256):
         if mode == 'train':
             self.transform = transforms.Compose([
-                transforms.RandomResizedCrop(size=224, scale=(0.2, 1.)),
+                transforms.RandomResizedCrop(size=h, scale=(0.2, 1.)),
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.RandomApply([
                     transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)
@@ -17,7 +17,7 @@ class TwoCropTransform:
             ])
         else:
             self.transform = transforms.Compose([
-                transforms.Resize((224, 224)),
+                transforms.Resize((h, w)),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
             ])
