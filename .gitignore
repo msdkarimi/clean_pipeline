@@ -4,3 +4,6 @@ pretrained/focalnet_small_lrf.pth
 plots/
 logger/
 checkpoints/
+dataset/
+create_ds.py
+tst.py

@@ -1,7 +1,8 @@
 from absl.logging import vlog_is_on
 
 from util.config import get_backbone_config
-from modules.backbone_copy import FocalNet
+# from modules.backbone_copy import FocalNet
+from modules.backbone import FocalNet
 from modules.sup_con_model import SupConModel
 from util.train_util import train_epoch, configure_optimizers, validation, from_pretrained
 import torch
@@ -23,18 +24,18 @@ def main():
 
     vis_backbone = from_pretrained(model=vis_backbone, load_dir='pretrained/focalnet_small_lrf.pth', logger=logger)
 
-    model = SupConModel(backbone=vis_backbone, num_classes=3).cuda()
+    model = SupConModel(backbone=vis_backbone, num_classes=4).cuda()
 
 
-    train_dataset = SupConDataset(root_dir="C:\\Users\massoud\PycharmProjects\\700perizie_cleaning\wsss_image_annotation_extaction",
+    train_dataset = SupConDataset(root_dir="dataset",
                             mode='train',
                             transform=TwoCropTransform())
-    train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
-    val_dataset = SupConDataset(root_dir="C:\\Users\massoud\PycharmProjects\\700perizie_cleaning\wsss_image_annotation_extaction",
-                            mode='val',
-                            transform=TwoCropTransform(mode='val'))
-    val_dataloader = DataLoader(val_dataset, batch_size=16, shuffle=False)
+    val_dataset = SupConDataset(root_dir="dataset",
+                            mode='test',
+                            transform=TwoCropTransform(mode='test'))
+    val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
     opts_lr_schedulers = configure_optimizers(model, len(train_dataloader))
 

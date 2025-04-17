@@ -60,10 +60,10 @@ def configure_optimizers(model, num_training_steps_per_epoch):
         optimizer_sup_con, optimizer_cls , lr_scheduler_sup_con, lr_scheduler_cls
     )
 
-def criterion(sup_con_logits, cls_logits, labels, cls_weights=None):
+def criterion(sup_con_logits, cls_logits, labels, cls_weights=[0.01458, 0.99578, 0.99330, 0.99632]):
     sup_con = SupConLoss()
     sup_con_loss = sup_con(sup_con_logits, labels)
-    cls_loss = nn.CrossEntropyLoss(weight=cls_weights)(cls_logits, labels)
+    cls_loss = nn.CrossEntropyLoss(weight=torch.from_numpy(np.array(cls_weights)).cuda().float())(cls_logits, labels)
     return sup_con_loss, cls_loss
 
 def take_step(model, sup_con_loss, cls_loss, batch_idx, epoch, steps_per_epoch, opts_lr_schedulers, grad_norm_meter_supCon, grad_norm_meter_cls):
@@ -87,7 +87,7 @@ def take_step(model, sup_con_loss, cls_loss, batch_idx, epoch, steps_per_epoch, 
 
 def train_epoch(model, train_loader, opts_lr_schedulers, epoch, steps_per_epoch, logger):
     model.train()
-    model.backbone.freezer()
+    # model.backbone.freezer()
 
     loss_meter_sup_con = AverageMeter()
     loss_meter_cls = AverageMeter()

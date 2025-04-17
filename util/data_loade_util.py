@@ -2,7 +2,7 @@ from torchvision import transforms
 
 class TwoCropTransform:
     """Create two crops of the same image"""
-    def __init__(self, mode='train', h=256, w=256):
+    def __init__(self, mode='train', h=224, w=224):
         if mode == 'train':
             self.transform = transforms.Compose([
                 transforms.RandomResizedCrop(size=h, scale=(0.2, 1.)),
